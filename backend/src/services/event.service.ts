@@ -459,13 +459,13 @@ export class EventService {
       }
 
       // Notify all 'going' attendees (fire-and-forget)
-      supabaseAdmin
+      Promise.resolve(supabaseAdmin
         .from('event_attendees')
         .select('user_id')
         .eq('event_id', eventId)
         .eq('status', 'going')
         .neq('user_id', userId)
-        .then(({ data: attendees }) => {
+      ).then(({ data: attendees }) => {
           const ids = (attendees || []).map((a: any) => a.user_id);
           if (ids.length) {
             return pushService.notifyUsers(
@@ -475,6 +475,7 @@ export class EventService {
               { type: 'event_cancelled', eventId }
             );
           }
+          return;
         })
         .catch(() => {});
 
@@ -575,12 +576,12 @@ export class EventService {
       await this.updateAttendeeCount(eventId);
 
       // Notify event creator (fire-and-forget)
-      supabaseAdmin
+      Promise.resolve(supabaseAdmin
         .from('events')
         .select('user_id, title')
         .eq('id', eventId)
         .single()
-        .then(({ data: event }) => {
+      ).then(({ data: event }) => {
           if (event?.user_id && event.user_id !== userId) {
             return pushService.notifyUsers(
               [event.user_id],
@@ -589,6 +590,7 @@ export class EventService {
               { type: 'rsvp_cancelled', eventId }
             );
           }
+          return;
         })
         .catch(() => {});
 

@@ -41,12 +41,12 @@ export class ChatService {
       const saved = maskAnonymousUser(data);
 
       // Notify event creator (fire-and-forget, with cooldown)
-      supabaseAdmin
+      Promise.resolve(supabaseAdmin
         .from('events')
         .select('user_id, title')
         .eq('id', eventId)
         .single()
-        .then(({ data: event }) => {
+      ).then(({ data: event }) => {
           if (event?.user_id && event.user_id !== userId) {
             const eligible = filterCooldown([event.user_id], 'event_chat', eventId);
             if (!eligible.length) return;
@@ -58,6 +58,7 @@ export class ChatService {
               { type: 'event_chat', eventId }
             );
           }
+          return;
         })
         .catch(() => {});
 

@@ -54,12 +54,12 @@ export class ReportChatService {
       const saved = maskAnonymousUser(data);
 
       // Notify report creator + prior participants (fire-and-forget, with cooldown)
-      supabaseAdmin
+      Promise.resolve(supabaseAdmin
         .from('report_messages')
         .select('user_id')
         .eq('report_id', reportId)
         .neq('user_id', userId)
-        .then(({ data: prior }) => {
+      ).then(({ data: prior }) => {
           const participantIds = new Set((prior || []).map((m: any) => m.user_id));
           if (report?.user_id && report.user_id !== userId) {
             participantIds.add(report.user_id);

@@ -38,12 +38,12 @@ export class ReviewService {
 
       // Notify item owner (fire-and-forget)
       const table = data.itemType === 'pin' ? 'pins' : 'events';
-      supabaseAdmin
+      Promise.resolve(supabaseAdmin
         .from(table)
         .select('user_id, title')
         .eq('id', data.itemId)
         .single()
-        .then(({ data: item }) => {
+      ).then(({ data: item }) => {
           if (item?.user_id && item.user_id !== data.userId) {
             const label = data.itemType === 'pin' ? 'pin' : 'event';
             return pushService.notifyUsers(
@@ -53,6 +53,7 @@ export class ReviewService {
               { type: 'review', itemType: data.itemType, itemId: data.itemId }
             );
           }
+          return;
         })
         .catch(() => {});
 
