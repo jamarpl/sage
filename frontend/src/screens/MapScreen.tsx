@@ -341,7 +341,13 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
   const recentlyConvertedPoiIdsRef = useRef<Set<string>>(new Set());
   const insets = useSafeAreaInsets();
   const { user, refreshUser } = useAuth();
-  const { colors, isDarkMode } = useTheme();
+  const { colors, isDarkMode, loading: themeLoading } = useTheme();
+  // Freeze the light preset on first stable theme read to prevent Mapbox
+  // from reloading its style mid-render when AsyncStorage resolves.
+  const stableLightPreset = useRef<string | null>(null);
+  if (!themeLoading && stableLightPreset.current === null) {
+    stableLightPreset.current = isDarkMode ? 'night' : 'day';
+  }
   const { currentArea, isInCampus, mode, setMode, setLocation } = useArea();
 
   const sheetPeek = sheetContent === 'detail' ? SHEET_PEEK_DETAIL : SHEET_PEEK_BASE;
@@ -4227,15 +4233,14 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
     if (!selectedPin) return;
     const coords = getCoordinatesFromPin(selectedPin);
     if (!coords) return;
+    const pinId = selectedPin.id !== 'temp-event' ? selectedPin.id : undefined;
+    const pinTitle = selectedPin.title;
+    const location = { lat: coords[1], lng: coords[0] };
     closePinMoreMenu(() => {
       setSelectedPin(null);
-      setReportModalContext({
-        lat: coords[1],
-        lng: coords[0],
-        pinId: selectedPin.id !== 'temp-event' ? selectedPin.id : undefined,
-        pinTitle: selectedPin.title,
-      });
-      setShowReportModal(true);
+      setTimeout(() => {
+        navigation.navigate('CreateReport', { location, pinId, pinTitle });
+      }, 300);
     });
   };
 
@@ -6546,22 +6551,24 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
           }
         }}
       >
-        <MapboxGL.StyleImport
-          id="basemap"
-          existing
-          config={{
-            lightPreset: isDarkMode ? 'night' : 'day',
-            showPointOfInterestLabels: 'true',
-          }}
-        />
+        {stableLightPreset.current && (
+          <MapboxGL.StyleImport
+            id="basemap"
+            existing
+            config={{
+              lightPreset: stableLightPreset.current,
+              showPointOfInterestLabels: 'true',
+            }}
+          />
+        )}
 
 
         <MapboxGL.Camera
           ref={cameraRef}
           zoomLevel={14}
           centerCoordinate={[-76.7479, 18.0179]}
-          animationMode="flyTo"
-          animationDuration={1500}
+          animationMode="none"
+          animationDuration={0}
         />
 
         {zoomLevel >= 13

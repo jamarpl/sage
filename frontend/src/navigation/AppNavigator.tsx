@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ActivityIndicator, Animated, TouchableOpacity, Easing } from 'react-native';
+import { View, ActivityIndicator, Animated, TouchableOpacity } from 'react-native';
 import { createStackNavigator, CardStyleInterpolators, TransitionSpecs } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -54,58 +53,13 @@ const AnimatedTabButton = ({ children, onPress, onLongPress, style }: any) => {
   );
 };
 
-// Wraps a tab screen so it fades + slides up when it gains focus.
-const AnimatedTabScreen = ({ children }: { children: React.ReactNode }) => {
-  const isFocused = useIsFocused();
-  const anim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (isFocused) {
-      anim.setValue(0);
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 260,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [isFocused]);
-
-  return (
-    <Animated.View
-      style={{
-        flex: 1,
-        opacity: anim,
-        transform: [
-          {
-            translateY: anim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [14, 0],
-            }),
-          },
-        ],
-      }}
-    >
-      {children}
-    </Animated.View>
-  );
-};
-
 const MapTabScreen = (props: any) => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = TAB_BAR_BASE_HEIGHT + Math.max(insets.bottom, 8);
-  return (
-    <AnimatedTabScreen>
-      <MapScreen {...props} navBarHeight={tabBarHeight} />
-    </AnimatedTabScreen>
-  );
+  return <MapScreen {...props} navBarHeight={tabBarHeight} />;
 };
 
-const ProfileTabScreen = (props: any) => (
-  <AnimatedTabScreen>
-    <ProfileScreen {...props} />
-  </AnimatedTabScreen>
-);
+const ProfileTabScreen = (props: any) => <ProfileScreen {...props} />;
 
 const MainTabs = () => {
   const { colors } = useTheme();

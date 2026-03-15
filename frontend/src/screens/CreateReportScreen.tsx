@@ -22,14 +22,14 @@ import ImagePicker from '../components/ImagePicker';
 
 export type ReportType = 'hazard' | 'food_status' | 'campus_update' | 'safety' | 'accessibility' | 'general' | 'other';
 
-const REPORT_TYPES: { value: ReportType; label: string; icon: string; description: string }[] = [
-  { value: 'general',       label: 'General',       icon: 'chatbubble-outline',   description: 'Quick note or update' },
-  { value: 'hazard',        label: 'Hazard',         icon: 'warning-outline',      description: 'Physical danger' },
-  { value: 'food_status',   label: 'Food',           icon: 'restaurant-outline',   description: 'Food spot status' },
-  { value: 'safety',        label: 'Safety',         icon: 'shield-outline',       description: 'Safety concern' },
-  { value: 'campus_update', label: 'Campus',         icon: 'school-outline',       description: 'Campus change' },
-  { value: 'accessibility', label: 'Accessibility',  icon: 'accessibility-outline', description: 'Access issue' },
-  { value: 'other',         label: 'Other',          icon: 'ellipsis-horizontal-circle-outline', description: 'Something else' },
+const REPORT_TYPES: { value: ReportType; label: string; icon: string; color: string; tint: string }[] = [
+  { value: 'general',       label: 'General',       icon: 'chatbubble-outline',              color: '#28B873', tint: 'rgba(40,184,115,0.12)' },
+  { value: 'hazard',        label: 'Hazard',         icon: 'warning-outline',                 color: '#FF9500', tint: 'rgba(255,149,0,0.12)' },
+  { value: 'food_status',   label: 'Food',           icon: 'restaurant-outline',              color: '#FF6B35', tint: 'rgba(255,107,53,0.12)' },
+  { value: 'safety',        label: 'Safety',         icon: 'shield-outline',                  color: '#FF3B30', tint: 'rgba(255,59,48,0.12)' },
+  { value: 'campus_update', label: 'Campus',         icon: 'school-outline',                  color: '#5856D6', tint: 'rgba(88,86,214,0.12)' },
+  { value: 'accessibility', label: 'Accessibility',  icon: 'accessibility-outline',           color: '#007AFF', tint: 'rgba(0,122,255,0.12)' },
+  { value: 'other',         label: 'Other',          icon: 'ellipsis-horizontal-circle-outline', color: '#8E8E93', tint: 'rgba(142,142,147,0.12)' },
 ];
 
 const TYPE_SUBOPTIONS: Record<ReportType, { value: string; label: string }[]> = {
@@ -120,7 +120,6 @@ const SAFETY_LEVEL_OPTIONS = [
   { value: 'unsafe', label: 'Unsafe' },
 ];
 
-// Which live-signal fields are relevant per report type
 const SIGNAL_FIELDS: Record<ReportType, string[]> = {
   general:        ['open_now', 'crowd_level', 'purchase_required', 'accessibility', 'safety'],
   food_status:    ['open_now', 'crowd_level', 'purchase_required'],
@@ -207,7 +206,6 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
       if (accessibilityLevel) metadata.accessibility_level = accessibilityLevel;
       if (safetyLevel) metadata.safety_level = safetyLevel;
 
-      // Preserve old behavior for subtype-driven statuses while filling structured fields.
       if (!metadata.open_now && (subOption === 'open' || subOption === 'closed')) {
         metadata.open_now = subOption;
       }
@@ -283,8 +281,23 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
         headerSubtitle: { ...typography.captionMedium, color: colors.textSecondary, marginTop: 1 },
         headerSpacer: { width: 36, height: 36 },
 
-        scrollView: { flex: 1 },
-        scrollContent: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md },
+        scrollView: { flex: 1, paddingHorizontal: spacing.md },
+
+        section: { marginBottom: spacing.lg },
+
+        label: {
+          ...typography.captionMedium,
+          color: colors.textSecondary,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+          marginBottom: spacing.xs,
+        },
+
+        divider: {
+          height: StyleSheet.hairlineWidth,
+          backgroundColor: colors.borderLight,
+          marginBottom: spacing.lg,
+        },
 
         // ── Pin context pill ──
         pinContextPill: {
@@ -300,87 +313,67 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
         },
         pinContextText: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
 
-        sectionLabel: {
-          ...typography.bodySmallSemibold,
-          color: colors.text,
-          marginBottom: spacing.xs,
-        },
-
-        // ── Type grid ──
-        typeGrid: {
+        // ── Type chips ──
+        typeRow: {
           flexDirection: 'row',
           flexWrap: 'wrap',
           gap: spacing.sm,
-          marginBottom: spacing.sm,
         },
-        typeCard: {
+        typeChip: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: spacing.sm,
+          paddingVertical: 7,
           paddingHorizontal: spacing.sm,
-          borderRadius: borderRadius.md,
+          borderRadius: borderRadius.sm,
           backgroundColor: colors.surfaceGray,
           gap: spacing.xs,
         },
-        typeCardActive: { backgroundColor: colors.interactiveBg },
-        typeCardText: { ...typography.bodySmallMedium, color: colors.text },
-        typeCardTextActive: { color: colors.interactiveText },
+        typeChipText: { ...typography.bodySmallMedium, color: colors.text },
 
-        // ── Sub options ──
-        subRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
-        subChip: {
+        // ── Chips (sub-options & signal) ──
+        chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+        chip: {
           paddingVertical: spacing.sm,
-          paddingHorizontal: spacing.sm,
+          paddingHorizontal: spacing.md,
           borderRadius: borderRadius.round,
           backgroundColor: colors.surfaceGray,
           borderWidth: 1,
           borderColor: 'transparent',
         },
-        subChipActive: {
+        chipActive: {
           backgroundColor: colors.accentTint,
           borderColor: colors.accent,
         },
-        subChipText: { ...typography.captionBold, color: colors.textSecondary },
-        subChipTextActive: { color: colors.accent },
-        signalGroup: {
-          marginBottom: spacing.sm,
-        },
-        signalGroupLabel: {
-          ...typography.captionBold,
-          color: colors.textSecondary,
-          marginBottom: spacing.xs,
-        },
+        chipText: { ...typography.bodySmallMedium, color: colors.textSecondary },
+        chipTextActive: { color: colors.accent },
 
         // ── Text input ──
         inputWrapper: {
           backgroundColor: colors.surfaceGray,
-          borderRadius: borderRadius.lg,
+          borderRadius: borderRadius.sm,
           padding: spacing.sm,
-          marginBottom: spacing.xs,
         },
         input: {
           ...typography.bodySmall,
           color: colors.text,
-          minHeight: 68,
+          minHeight: 80,
           textAlignVertical: 'top',
           paddingVertical: spacing.xs,
           paddingHorizontal: spacing.xs,
         },
-        charRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: spacing.md },
+        charRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: spacing.xs },
         charCount: { ...typography.caption, color: colors.textMuted },
-
-        photosSection: { marginBottom: spacing.xs },
 
         footer: {
           paddingHorizontal: spacing.md,
-          paddingTop: spacing.xs,
+          paddingTop: spacing.md,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.borderLight,
         },
         submitButton: {
           backgroundColor: colors.interactiveBg,
           paddingVertical: spacing.md,
-          borderRadius: borderRadius.md,
+          borderRadius: borderRadius.sm,
           alignItems: 'center',
           flexDirection: 'row',
           justifyContent: 'center',
@@ -424,7 +417,7 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
         <View style={s.headerSpacer} />
         <View style={s.headerInfo}>
           <Text style={s.headerTitle}>Submit report</Text>
-          <Text style={s.headerSubtitle}>{selectedTypeObj.description}</Text>
+          <Text style={s.headerSubtitle}>{selectedTypeObj.label}</Text>
         </View>
         <TouchableOpacity
           onPress={() => {
@@ -453,11 +446,10 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
 
       <ScrollView
         style={s.scrollView}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={{ paddingTop: spacing.sm, paddingBottom: spacing.lg }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Pin context */}
         {pinTitle && (
           <View style={s.pinContextPill}>
             <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
@@ -466,76 +458,73 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
         )}
 
         {/* Type */}
-        <Text style={s.sectionLabel}>Type</Text>
-        <View style={s.typeGrid}>
-          {REPORT_TYPES.map((t) => {
-            const active = type === t.value;
-            return (
-              <TouchableOpacity
-                key={t.value}
-                style={[s.typeCard, active && s.typeCardActive]}
-                onPress={() => {
-                  setType(t.value);
-                  setSubOption('');
-                  setOpenNow('');
-                  setCrowdLevel('');
-                  setPurchaseRequired('');
-                  setAccessibilityLevel('');
-                  setSafetyLevel('');
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name={t.icon as any}
-                  size={15}
-                  color={active ? colors.interactiveText : colors.textSecondary}
-                />
-                <Text style={[s.typeCardText, active && s.typeCardTextActive]}>{t.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+        <View style={s.section}>
+          <Text style={s.label}>Type</Text>
+          <View style={s.typeRow}>
+            {REPORT_TYPES.map((t) => {
+              const active = type === t.value;
+              return (
+                <TouchableOpacity
+                  key={t.value}
+                  style={[s.typeChip, active && { backgroundColor: t.tint }]}
+                  onPress={() => {
+                    setType(t.value);
+                    setSubOption('');
+                    setOpenNow('');
+                    setCrowdLevel('');
+                    setPurchaseRequired('');
+                    setAccessibilityLevel('');
+                    setSafetyLevel('');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={t.icon as any} size={15} color={active ? t.color : colors.textSecondary} />
+                  <Text style={[s.typeChipText, active && { color: t.color, fontWeight: '600' }]}>{t.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         {/* Sub options */}
         {subOptions.length > 0 && (
           <>
-            <Text style={s.sectionLabel}>Details</Text>
-            <View style={s.subRow}>
-              {subOptions.map((opt) => {
-                const active = subOption === opt.value;
-                return (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={[s.subChip, active && s.subChipActive]}
-                    onPress={() => setSubOption(active ? '' : opt.value)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[s.subChipText, active && s.subChipTextActive]}>{opt.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={s.divider} />
+            <View style={s.section}>
+              <Text style={s.label}>Details</Text>
+              <View style={s.chipRow}>
+                {subOptions.map((opt) => {
+                  const active = subOption === opt.value;
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      style={[s.chip, active && s.chipActive]}
+                      onPress={() => setSubOption(active ? '' : opt.value)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[s.chipText, active && s.chipTextActive]}>{opt.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           </>
         )}
 
+        {/* Signal fields */}
         {signalFields.length > 0 && (
           <>
-            <Text style={s.sectionLabel}>Live signal (optional)</Text>
+            <View style={s.divider} />
 
             {signalFields.includes('open_now') && (
-              <View style={s.signalGroup}>
-                <Text style={s.signalGroupLabel}>Open now</Text>
-                <View style={s.subRow}>
+              <View style={s.section}>
+                <Text style={s.label}>Open now</Text>
+                <View style={s.chipRow}>
                   {OPEN_NOW_OPTIONS.map((opt) => {
                     const active = openNow === opt.value;
                     return (
-                      <TouchableOpacity
-                        key={opt.value}
-                        style={[s.subChip, active && s.subChipActive]}
-                        onPress={() => setOpenNow(active ? '' : opt.value)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[s.subChipText, active && s.subChipTextActive]}>{opt.label}</Text>
+                      <TouchableOpacity key={opt.value} style={[s.chip, active && s.chipActive]} onPress={() => setOpenNow(active ? '' : opt.value)} activeOpacity={0.7}>
+                        <Text style={[s.chipText, active && s.chipTextActive]}>{opt.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -544,19 +533,14 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
             )}
 
             {signalFields.includes('crowd_level') && (
-              <View style={s.signalGroup}>
-                <Text style={s.signalGroupLabel}>Crowd level</Text>
-                <View style={s.subRow}>
+              <View style={s.section}>
+                <Text style={s.label}>Crowd level</Text>
+                <View style={s.chipRow}>
                   {CROWD_LEVEL_OPTIONS.map((opt) => {
                     const active = crowdLevel === opt.value;
                     return (
-                      <TouchableOpacity
-                        key={opt.value}
-                        style={[s.subChip, active && s.subChipActive]}
-                        onPress={() => setCrowdLevel(active ? '' : opt.value)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[s.subChipText, active && s.subChipTextActive]}>{opt.label}</Text>
+                      <TouchableOpacity key={opt.value} style={[s.chip, active && s.chipActive]} onPress={() => setCrowdLevel(active ? '' : opt.value)} activeOpacity={0.7}>
+                        <Text style={[s.chipText, active && s.chipTextActive]}>{opt.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -565,19 +549,14 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
             )}
 
             {signalFields.includes('purchase_required') && (
-              <View style={s.signalGroup}>
-                <Text style={s.signalGroupLabel}>Purchase required</Text>
-                <View style={s.subRow}>
+              <View style={s.section}>
+                <Text style={s.label}>Purchase required</Text>
+                <View style={s.chipRow}>
                   {PURCHASE_REQUIRED_OPTIONS.map((opt) => {
                     const active = purchaseRequired === opt.value;
                     return (
-                      <TouchableOpacity
-                        key={opt.value}
-                        style={[s.subChip, active && s.subChipActive]}
-                        onPress={() => setPurchaseRequired(active ? '' : opt.value)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[s.subChipText, active && s.subChipTextActive]}>{opt.label}</Text>
+                      <TouchableOpacity key={opt.value} style={[s.chip, active && s.chipActive]} onPress={() => setPurchaseRequired(active ? '' : opt.value)} activeOpacity={0.7}>
+                        <Text style={[s.chipText, active && s.chipTextActive]}>{opt.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -586,19 +565,14 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
             )}
 
             {signalFields.includes('accessibility') && (
-              <View style={s.signalGroup}>
-                <Text style={s.signalGroupLabel}>Accessibility</Text>
-                <View style={s.subRow}>
+              <View style={s.section}>
+                <Text style={s.label}>Accessibility</Text>
+                <View style={s.chipRow}>
                   {ACCESSIBILITY_LEVEL_OPTIONS.map((opt) => {
                     const active = accessibilityLevel === opt.value;
                     return (
-                      <TouchableOpacity
-                        key={opt.value}
-                        style={[s.subChip, active && s.subChipActive]}
-                        onPress={() => setAccessibilityLevel(active ? '' : opt.value)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[s.subChipText, active && s.subChipTextActive]}>{opt.label}</Text>
+                      <TouchableOpacity key={opt.value} style={[s.chip, active && s.chipActive]} onPress={() => setAccessibilityLevel(active ? '' : opt.value)} activeOpacity={0.7}>
+                        <Text style={[s.chipText, active && s.chipTextActive]}>{opt.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -607,19 +581,14 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
             )}
 
             {signalFields.includes('safety') && (
-              <View style={s.signalGroup}>
-                <Text style={s.signalGroupLabel}>Safety</Text>
-                <View style={s.subRow}>
+              <View style={s.section}>
+                <Text style={s.label}>Safety level</Text>
+                <View style={s.chipRow}>
                   {SAFETY_LEVEL_OPTIONS.map((opt) => {
                     const active = safetyLevel === opt.value;
                     return (
-                      <TouchableOpacity
-                        key={opt.value}
-                        style={[s.subChip, active && s.subChipActive]}
-                        onPress={() => setSafetyLevel(active ? '' : opt.value)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[s.subChipText, active && s.subChipTextActive]}>{opt.label}</Text>
+                      <TouchableOpacity key={opt.value} style={[s.chip, active && s.chipActive]} onPress={() => setSafetyLevel(active ? '' : opt.value)} activeOpacity={0.7}>
+                        <Text style={[s.chipText, active && s.chipTextActive]}>{opt.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -630,25 +599,29 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
         )}
 
         {/* Context */}
-        <Text style={s.sectionLabel}>What's happening?</Text>
-        <View style={s.inputWrapper}>
-          <TextInput
-            style={s.input}
-            placeholder={CONTEXT_PLACEHOLDERS[type]}
-            placeholderTextColor={colors.textMuted}
-            value={content}
-            onChangeText={setContent}
-            multiline
-            maxLength={200}
-          />
-        </View>
-        <View style={s.charRow}>
-          <Text style={s.charCount}>{content.length}/200</Text>
+        <View style={s.divider} />
+        <View style={s.section}>
+          <Text style={s.label}>What's happening? (optional)</Text>
+          <View style={s.inputWrapper}>
+            <TextInput
+              style={s.input}
+              placeholder={CONTEXT_PLACEHOLDERS[type]}
+              placeholderTextColor={colors.textMuted}
+              value={content}
+              onChangeText={setContent}
+              multiline
+              maxLength={200}
+            />
+          </View>
+          <View style={s.charRow}>
+            <Text style={s.charCount}>{content.length}/200</Text>
+          </View>
         </View>
 
         {/* Photo */}
-        <View style={s.photosSection}>
-          <Text style={s.sectionLabel}>Add a photo</Text>
+        <View style={s.divider} />
+        <View style={[s.section, { marginBottom: 0 }]}>
+          <Text style={s.label}>Photo (optional)</Text>
           <ImagePicker
             onImagesSelected={setImageUris}
             maxImages={1}
@@ -659,7 +632,8 @@ export default function CreateReportScreen({ navigation, route }: CreateReportSc
           />
         </View>
       </ScrollView>
-      <View style={[s.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+
+      <View style={[s.footer, { paddingBottom: insets.bottom + spacing.md }]}>
         <TouchableOpacity
           style={[s.submitButton, loading && s.submitButtonDisabled]}
           onPress={handleSubmit}

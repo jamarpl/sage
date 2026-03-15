@@ -187,7 +187,7 @@ export default function ItemReviewsScreen({ navigation, route }: ItemReviewsScre
           flexDirection: 'row',
           alignItems: 'center',
           paddingHorizontal: spacing.md,
-          paddingBottom: spacing.lg,
+          paddingVertical: spacing.md,
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: colors.borderLight,
         },
@@ -478,8 +478,8 @@ export default function ItemReviewsScreen({ navigation, route }: ItemReviewsScre
   };
 
   return (
-    <View style={s.container}>
-      <View style={[s.header, { paddingTop: insets.top + spacing.sm }]}>
+    <View style={[s.container, { paddingTop: insets.top }]}>
+      <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backButton}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
         </TouchableOpacity>

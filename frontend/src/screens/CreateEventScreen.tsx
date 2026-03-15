@@ -45,9 +45,9 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
   const [hour, setHour] = useState('');
   const [minute, setMinute] = useState('');
   const [meridiem, setMeridiem] = useState<'AM' | 'PM'>('PM');
-  const [duration, setDuration] = useState('2h');
-  const [customDays, setCustomDays] = useState('');
-  const [customHours, setCustomHours] = useState('');
+  const [endHour, setEndHour] = useState('');
+  const [endMinute, setEndMinute] = useState('');
+  const [endMeridiem, setEndMeridiem] = useState<'AM' | 'PM'>('PM');
   const [maxAttendees, setMaxAttendees] = useState('');
   const [locationName, setLocationName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -58,21 +58,6 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
   const [coverImage, setCoverImage] = useState<string[]>([]);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-
-  const DURATION_OPTIONS = [
-    { value: '30m', label: '30 min' },
-    { value: '1h', label: '1 hr' },
-    { value: '2h', label: '2 hrs' },
-    { value: '3h', label: '3 hrs' },
-    { value: '4h', label: '4 hrs' },
-    { value: '6h', label: '6 hrs' },
-    { value: '8h', label: '8 hrs' },
-    { value: '12h', label: '12 hrs' },
-    { value: '1d', label: '1 day' },
-    { value: '2d', label: '2 days' },
-    { value: '3d', label: '3 days' },
-    { value: 'custom', label: 'Custom' },
-  ];
 
   const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -132,6 +117,22 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
 
   const handleMinuteBlur = () => {
     if (minute.length === 1) setMinute(minute.padStart(2, '0'));
+  };
+
+  const handleEndHourChange = (text: string) => {
+    const digits = text.replace(/\D/g, '').substring(0, 2);
+    const num = parseInt(digits, 10);
+    if (digits === '' || (num >= 0 && num <= 12)) setEndHour(digits);
+  };
+
+  const handleEndMinuteChange = (text: string) => {
+    const digits = text.replace(/\D/g, '').substring(0, 2);
+    const num = parseInt(digits, 10);
+    if (digits === '' || (num >= 0 && num <= 59)) setEndMinute(digits);
+  };
+
+  const handleEndMinuteBlur = () => {
+    if (endMinute.length === 1) setEndMinute(endMinute.padStart(2, '0'));
   };
 
   const s = useMemo(
@@ -334,50 +335,10 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
         meridiemText: { ...typography.bodySmallMedium, color: colors.textMuted },
         meridiemTextActive: { color: colors.interactiveText },
 
-        durationRow: {
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: spacing.sm,
-        },
-        durationChip: {
-          paddingVertical: spacing.sm,
-          paddingHorizontal: spacing.sm,
-          borderRadius: borderRadius.sm,
-          backgroundColor: colors.surfaceGray,
-        },
-        durationChipActive: {
-          backgroundColor: colors.interactiveBg,
-        },
-        durationChipText: { ...typography.bodySmallMedium, color: colors.text },
-        durationChipTextActive: { color: colors.interactiveText },
-        customDurationRow: {
-          flexDirection: 'row',
-          gap: spacing.sm,
-          marginTop: spacing.sm,
-        },
-        customDurationField: {
-          flex: 1,
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.surfaceGray,
-          borderRadius: borderRadius.sm,
-          paddingVertical: spacing.sm,
-          height: 64,
-        },
-        customDurationInput: {
-          ...typography.h3,
-          color: colors.text,
-          textAlign: 'center',
-          width: '100%',
-          paddingHorizontal: 0,
-          paddingVertical: 0,
-          height: 30,
-        },
-        customDurationUnit: {
-          ...typography.caption,
-          color: colors.textMuted,
-          marginTop: 2,
+        timeRowLabel: {
+          ...typography.captionBold,
+          color: colors.textSecondary,
+          width: 42,
         },
 
         switchRow: {
@@ -426,60 +387,18 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
     }
   }, [route?.params?.location]);
 
-  const buildStartTimeISO = (): string | null => {
+  const buildTimeISO = (h: string, m: string, mer: 'AM' | 'PM', date: Date): string | null => {
     try {
-      if (!selectedDate) return null;
-
-      let hours = parseInt(hour, 10);
-      const minutes = parseInt(minute || '0', 10);
+      let hours = parseInt(h, 10);
+      const minutes = parseInt(m || '0', 10);
       if (isNaN(hours)) return null;
-
-      if (meridiem === 'PM' && hours !== 12) hours += 12;
-      if (meridiem === 'AM' && hours === 12) hours = 0;
-
-      const dateObj = new Date(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate(),
-        hours,
-        minutes,
-      );
+      if (mer === 'PM' && hours !== 12) hours += 12;
+      if (mer === 'AM' && hours === 12) hours = 0;
+      const dateObj = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
       if (isNaN(dateObj.getTime())) return null;
       return dateObj.toISOString();
     } catch {
       return null;
-    }
-  };
-
-  const parseDurationToHours = (val: string): number => {
-    if (val === '30m') return 0.5;
-    if (val === '1h') return 1;
-    if (val === '2h') return 2;
-    if (val === '3h') return 3;
-    if (val === '4h') return 4;
-    if (val === '6h') return 6;
-    if (val === '8h') return 8;
-    if (val === '12h') return 12;
-    if (val === '1d') return 24;
-    if (val === '2d') return 48;
-    if (val === '3d') return 72;
-    if (val === 'custom') {
-      const d = parseFloat(customDays) || 0;
-      const h = parseFloat(customHours) || 0;
-      return d * 24 + h || 2;
-    }
-    try {
-      const lower = val.toLowerCase();
-      const dayMatch = lower.match(/(\d+\.?\d*)\s*d/);
-      const hourMatch = lower.match(/(\d+\.?\d*)\s*h/);
-      const minMatch = lower.match(/(\d+\.?\d*)\s*m/);
-      let hours = 0;
-      if (dayMatch) hours += parseFloat(dayMatch[1]) * 24;
-      if (hourMatch) hours += parseFloat(hourMatch[1]);
-      if (minMatch) hours += parseFloat(minMatch[1]) / 60;
-      return hours || 2;
-    } catch {
-      return 2;
     }
   };
 
@@ -493,26 +412,34 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
       return;
     }
     if (!selectedDate || !hour.trim()) {
-      showToast('Please select a date and time', 'error');
+      showToast('Please select a date and start time', 'error');
+      return;
+    }
+    if (!endHour.trim()) {
+      showToast('Please enter an end time', 'error');
       return;
     }
     if (!location) {
       showToast('Could not determine event location', 'error');
       return;
     }
-    if (duration === 'custom' && !customDays && !customHours) {
-      showToast('Please enter a custom duration', 'error');
-      return;
-    }
 
-    const startTime = buildStartTimeISO();
+    const startTime = buildTimeISO(hour, minute, meridiem, selectedDate);
     if (!startTime) {
-      showToast('Invalid date or time', 'error');
+      showToast('Invalid start time', 'error');
       return;
     }
 
-    const durationHours = duration ? parseDurationToHours(duration) : 2;
-    const endTime = new Date(new Date(startTime).getTime() + durationHours * 60 * 60 * 1000).toISOString();
+    const endTime = buildTimeISO(endHour, endMinute, endMeridiem, selectedDate);
+    if (!endTime) {
+      showToast('Invalid end time', 'error');
+      return;
+    }
+
+    if (new Date(endTime) <= new Date(startTime)) {
+      showToast('End time must be after start time', 'error');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -629,6 +556,8 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
           </View>
         </View>
 
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.lg }} />
+
         <View style={s.section}>
           <Text style={s.label}>Title</Text>
           <TextInput
@@ -639,6 +568,23 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
             onChangeText={setTitle}
           />
         </View>
+
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.lg }} />
+
+        <View style={s.section}>
+          <Text style={s.label}>Description</Text>
+          <TextInput
+            style={[s.input, s.textArea]}
+            placeholder="What's this event about?"
+            placeholderTextColor={colors.textMuted}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={4}
+          />
+        </View>
+
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.lg }} />
 
         <View style={s.section}>
           <Text style={s.label}>Date</Text>
@@ -704,9 +650,14 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
           </View>
         </View>
 
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.lg }} />
+
         <View style={s.section}>
-          <Text style={s.label}>Time</Text>
-          <View style={s.timeRow}>
+          <Text style={s.label}>When</Text>
+
+          {/* Start time */}
+          <View style={[s.timeRow, { marginBottom: spacing.sm }]}>
+            <Text style={s.timeRowLabel}>Starts</Text>
             <TextInput
               style={s.timeInput}
               placeholder="12"
@@ -728,71 +679,50 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
               maxLength={2}
             />
             <View style={s.meridiemRow}>
-              <TouchableOpacity
-                style={[s.meridiemButton, meridiem === 'AM' && s.meridiemButtonActive]}
-                onPress={() => setMeridiem('AM')}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={[s.meridiemButton, meridiem === 'AM' && s.meridiemButtonActive]} onPress={() => setMeridiem('AM')} activeOpacity={0.7}>
                 <Text style={[s.meridiemText, meridiem === 'AM' && s.meridiemTextActive]}>AM</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.meridiemButton, meridiem === 'PM' && s.meridiemButtonActive]}
-                onPress={() => setMeridiem('PM')}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={[s.meridiemButton, meridiem === 'PM' && s.meridiemButtonActive]} onPress={() => setMeridiem('PM')} activeOpacity={0.7}>
                 <Text style={[s.meridiemText, meridiem === 'PM' && s.meridiemTextActive]}>PM</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* End time */}
+          <View style={s.timeRow}>
+            <Text style={s.timeRowLabel}>Ends</Text>
+            <TextInput
+              style={s.timeInput}
+              placeholder="02"
+              placeholderTextColor={colors.textMuted}
+              value={endHour}
+              onChangeText={handleEndHourChange}
+              keyboardType="number-pad"
+              maxLength={2}
+            />
+            <Text style={s.timeColon}>:</Text>
+            <TextInput
+              style={s.timeInput}
+              placeholder="00"
+              placeholderTextColor={colors.textMuted}
+              value={endMinute}
+              onChangeText={handleEndMinuteChange}
+              onBlur={handleEndMinuteBlur}
+              keyboardType="number-pad"
+              maxLength={2}
+            />
+            <View style={s.meridiemRow}>
+              <TouchableOpacity style={[s.meridiemButton, endMeridiem === 'AM' && s.meridiemButtonActive]} onPress={() => setEndMeridiem('AM')} activeOpacity={0.7}>
+                <Text style={[s.meridiemText, endMeridiem === 'AM' && s.meridiemTextActive]}>AM</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.meridiemButton, endMeridiem === 'PM' && s.meridiemButtonActive]} onPress={() => setEndMeridiem('PM')} activeOpacity={0.7}>
+                <Text style={[s.meridiemText, endMeridiem === 'PM' && s.meridiemTextActive]}>PM</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        <View style={s.section}>
-          <Text style={s.label}>Duration</Text>
-          <View style={s.durationRow}>
-            {DURATION_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[s.durationChip, duration === opt.value && s.durationChipActive]}
-                onPress={() => setDuration(opt.value)}
-                activeOpacity={0.7}
-              >
-                <Text style={[s.durationChipText, duration === opt.value && s.durationChipTextActive]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {duration === 'custom' && (
-            <View style={s.customDurationRow}>
-              <View style={s.customDurationField}>
-                <TextInput
-                  style={s.customDurationInput}
-                  placeholder="0"
-                  placeholderTextColor={colors.textMuted}
-                  value={customDays}
-                  onChangeText={(t) => setCustomDays(t.replace(/\D/g, ''))}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  textAlign="center"
-                />
-                <Text style={s.customDurationUnit}>days</Text>
-              </View>
-              <View style={s.customDurationField}>
-                <TextInput
-                  style={s.customDurationInput}
-                  placeholder="0"
-                  placeholderTextColor={colors.textMuted}
-                  value={customHours}
-                  onChangeText={(t) => setCustomHours(t.replace(/\D/g, ''))}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  textAlign="center"
-                />
-                <Text style={s.customDurationUnit}>hrs</Text>
-              </View>
-            </View>
-          )}
-        </View>
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.lg }} />
 
         <View style={s.section}>
           <View style={s.switchRow}>
@@ -826,21 +756,10 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
           )}
         </View>
 
-        <View style={s.section}>
-          <Text style={s.label}>Description</Text>
-          <TextInput
-            style={[s.input, s.textArea]}
-            placeholder="What's this event about?"
-            placeholderTextColor={colors.textMuted}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-          />
-        </View>
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.lg }} />
 
         <View style={s.section}>
-          <Text style={s.label}>Venue</Text>
+          <Text style={s.label}>Venue (optional)</Text>
           <TextInput
             style={s.input}
             placeholder="e.g., Main Library, Room 204"
@@ -850,8 +769,10 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
           />
         </View>
 
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.lg }} />
+
         <View style={s.section}>
-          <Text style={s.label}>Max attendees</Text>
+          <Text style={s.label}>Max attendees (optional)</Text>
           <TextInput
             style={s.input}
             placeholder="Leave blank for unlimited"
@@ -861,6 +782,8 @@ export default function CreateEventScreen({ navigation, route }: CreateEventScre
             keyboardType="number-pad"
           />
         </View>
+
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.lg }} />
 
         <View style={[s.section, { marginBottom: 0 }]}>
           <Text style={s.label}>Cover image</Text>

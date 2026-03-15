@@ -6,9 +6,8 @@ import { usePushNotifications, scheduleContributionReminder } from './src/hooks/
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme, DarkTheme, LinkingOptions } from '@react-navigation/native';
 
-// Initialise Mapbox as early as possible so the access token is set
-// before any map view mounts — works in both dev and production builds.
-initMapbox();
+// Initialise Mapbox token before any MapView mounts.
+void initMapbox();
 import { Provider as PaperProvider, MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';

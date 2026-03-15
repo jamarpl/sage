@@ -58,7 +58,7 @@ export default function CreateReviewScreen({ navigation, route }: CreateReviewSc
           flexDirection: 'row',
           alignItems: 'center',
           paddingHorizontal: spacing.md,
-          paddingBottom: spacing.lg,
+          paddingVertical: spacing.md,
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: colors.borderLight,
         },
@@ -194,9 +194,9 @@ export default function CreateReviewScreen({ navigation, route }: CreateReviewSc
   };
 
   return (
-    <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={[s.container, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Header */}
-      <View style={[s.header, { paddingTop: insets.top + spacing.xs }]}>
+      <View style={s.header}>
         <View style={s.headerSpacer} />
         <View style={s.headerInfo}>
           <Text style={s.headerTitle} numberOfLines={1}>{itemTitle}</Text>

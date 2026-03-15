@@ -81,7 +81,7 @@ export default function CreatePinScreen({ navigation, route }: CreatePinScreenPr
 
         scrollView: { flex: 1, paddingHorizontal: spacing.md },
 
-        section: { marginBottom: spacing.md },
+        section: { marginBottom: spacing.lg },
         label: {
           ...typography.bodySmallSemibold,
           color: colors.textSecondary,
@@ -298,6 +298,8 @@ export default function CreatePinScreen({ navigation, route }: CreatePinScreenPr
           </View>
         </View>
 
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.md }} />
+
         <View style={s.section}>
           <Text style={s.label}>Title</Text>
           <TextInput
@@ -310,8 +312,10 @@ export default function CreatePinScreen({ navigation, route }: CreatePinScreenPr
           />
         </View>
 
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.md }} />
+
         <View style={s.section}>
-          <Text style={s.label}>Description</Text>
+          <Text style={s.label}>Description (optional)</Text>
           <TextInput
             style={[s.input, s.textArea]}
             placeholder="Add details to help others find it..."
@@ -323,8 +327,10 @@ export default function CreatePinScreen({ navigation, route }: CreatePinScreenPr
           />
         </View>
 
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.md }} />
+
         <View style={s.section}>
-          <Text style={s.label}>Location details</Text>
+          <Text style={s.label}>Building & floor (optional)</Text>
           <View style={s.inputRow}>
             <TextInput
               style={[s.input, s.inputHalf]}
@@ -344,8 +350,10 @@ export default function CreatePinScreen({ navigation, route }: CreatePinScreenPr
           </View>
         </View>
 
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.md }} />
+
         <View style={s.section}>
-          <Text style={s.label}>Access instructions</Text>
+          <Text style={s.label}>Access instructions (optional)</Text>
           <TextInput
             style={[s.input, s.textArea]}
             placeholder="How to get there..."
@@ -357,8 +365,10 @@ export default function CreatePinScreen({ navigation, route }: CreatePinScreenPr
           />
         </View>
 
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.borderLight, marginBottom: spacing.md }} />
+
         <View style={[s.section, { marginBottom: 0 }]}>
-          <Text style={s.label}>Photos</Text>
+          <Text style={s.label}>Photos (optional)</Text>
           <ImagePicker
             onImagesSelected={setImages}
             maxImages={5}

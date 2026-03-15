@@ -1,11 +1,24 @@
 import MapboxGL from '@rnmapbox/maps';
 import { MAPBOX_TOKEN } from '../constants/map';
 
+let tokenReady = false;
+let tokenPromise: Promise<void> | null = null;
+
 /**
  * Called once at app startup (in App.tsx / root layout).
- * The native SDK is already bootstrapped by the Expo plugin using the same
- * token baked at build time, so this JS call just keeps the two layers in sync.
+ * Returns a promise that resolves when the token is registered.
  */
-export function initMapbox() {
-  MapboxGL.setAccessToken(MAPBOX_TOKEN);
+export function initMapbox(): Promise<void> {
+  if (!tokenPromise) {
+    tokenPromise = MapboxGL.setAccessToken(MAPBOX_TOKEN).then(() => {
+      tokenReady = true;
+    }).catch(() => {
+      tokenReady = true; // unblock even on error — native SDK has the baked token
+    });
+  }
+  return tokenPromise;
+}
+
+export function isMapboxTokenReady() {
+  return tokenReady;
 }
