@@ -12,6 +12,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
+import { EventDetailSkeleton } from '../components/Skeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -390,8 +391,8 @@ export default function EventDetailScreen({ navigation, route }: EventDetailScre
         <TouchableWithoutFeedback onPress={() => navigation.goBack()}>
           <View style={s.backdrop} />
         </TouchableWithoutFeedback>
-        <View style={[s.sheet, { paddingVertical: spacing.xxl, alignItems: 'center' }]}>
-          <ActivityIndicator size="large" color={colors.text} />
+        <View style={s.sheet}>
+          <EventDetailSkeleton />
         </View>
       </View>
     );

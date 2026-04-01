@@ -13,6 +13,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { SkeletonBox } from '../components/Skeleton';
 import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -364,8 +365,16 @@ export default function GroupDetailScreen({ navigation, route }: GroupDetailScre
 
   if (loading) {
     return (
-      <View style={[s.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={colors.accent} />
+      <View style={[s.container, { paddingTop: insets.top, padding: spacing.md, gap: spacing.md }]}>
+        <SkeletonBox width="60%" height={20} radius={8} />
+        <SkeletonBox width="100%" height={56} radius={12} />
+        <SkeletonBox width="40%" height={14} radius={6} style={{ marginTop: spacing.sm }} />
+        {[0, 1, 2].map((i) => (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <SkeletonBox width={36} height={36} radius={18} />
+            <SkeletonBox width="50%" height={13} radius={6} />
+          </View>
+        ))}
       </View>
     );
   }

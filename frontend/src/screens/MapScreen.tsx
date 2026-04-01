@@ -25,6 +25,7 @@ import MapboxGL from '@rnmapbox/maps';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import BottomSheet, { BottomSheetFlatList, BottomSheetScrollView, useBottomSheetSpringConfigs } from '@gorhom/bottom-sheet';
+import Reanimated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { spacing, typography, borderRadius, shadows } from '../constants/theme';
 import { MAPBOX_STYLE_STANDARD, MAPBOX_TOKEN } from '../constants/map';
@@ -50,39 +51,14 @@ const SHEET_INDEX = {
   FULL: 2,
 } as const;
 
-const CHIP_PRESETS = {
-  morning: [
-    { id: 'coffee', label: 'Coffee', icon: 'cafe-outline' },
-    { id: 'study', label: 'Quiet Study', icon: 'book-outline' },
-    { id: 'bathroom', label: 'Bathroom', icon: 'water-outline' },
-    { id: 'event', label: 'Events', icon: 'calendar-outline' },
-  ],
-  day: [
-    { id: 'food', label: 'Food', icon: 'restaurant-outline' },
-    { id: 'bathroom', label: 'Bathroom', icon: 'water-outline' },
-    { id: 'pharmacy', label: 'Pharmacy', icon: 'medical-outline' },
-    { id: 'event', label: 'Events', icon: 'calendar-outline' },
-  ],
-  evening: [
-    { id: 'safe_walk', label: 'Safe Walk', icon: 'walk-outline' },
-    { id: 'open_late', label: 'Open Late', icon: 'time-outline' },
-    { id: 'food', label: 'Food', icon: 'restaurant-outline' },
-    { id: 'event', label: 'Events', icon: 'calendar-outline' },
-  ],
-  night: [
-    { id: 'safe_walk', label: 'Safe Walk', icon: 'walk-outline' },
-    { id: 'open_late', label: 'Open Late', icon: 'time-outline' },
-    { id: 'event', label: 'Events', icon: 'calendar-outline' },
-  ],
-};
-
-function getChipPreset(): { id: string; label: string; icon: string }[] {
-  const hour = new Date().getHours();
-  if (hour >= 6 && hour < 11) return CHIP_PRESETS.morning;
-  if (hour >= 11 && hour < 18) return CHIP_PRESETS.day;
-  if (hour >= 18 && hour < 23) return CHIP_PRESETS.evening;
-  return CHIP_PRESETS.night;
-}
+const QUICK_ACTIONS = [
+  { id: 'active_reports', label: 'Active Reports', icon: 'warning-outline' },
+  { id: 'food_open',      label: 'Food Open Now',  icon: 'restaurant-outline' },
+  { id: 'events_today',   label: 'Events Today',   icon: 'calendar-outline' },
+  { id: 'saved',          label: 'Saved Places',   icon: 'bookmark-outline' },
+  { id: 'add_report',     label: 'Add Report',     icon: 'flag-outline' },
+  { id: 'friends',        label: 'Friends Nearby', icon: 'people-outline' },
+];
 
 const PIN_ICONS: { [key: string]: string } = {
   bathroom: 'water-outline',
@@ -290,6 +266,15 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
   const [detailSnapOverride, setDetailSnapOverride] = useState<number | null>(null);
   const [sheetIndex, setSheetIndex] = useState(0);
   const [animatingToSheetIndex, setAnimatingToSheetIndex] = useState<number | null>(null);
+  const sheetAnimatedIndex = useSharedValue(0);
+  const groupFabAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(sheetAnimatedIndex.value, [0, 0.05], [1, 0], Extrapolation.CLAMP),
+    pointerEvents: sheetAnimatedIndex.value > 0.01 ? 'none' : 'auto',
+  }));
+  const pullHintAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(sheetAnimatedIndex.value, [0, 0.05], [1, 0], Extrapolation.CLAMP),
+    pointerEvents: sheetAnimatedIndex.value > 0.01 ? 'none' : 'auto',
+  }));
   const [eventHeaderHeight, setEventHeaderHeight] = useState<number>(96);
   const [isSheetRaisedPreview, setIsSheetRaisedPreview] = useState(false);
   const [feedFilter, setFeedFilter] = useState<string>('all');
@@ -326,8 +311,6 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
   const bannerAnim = useRef(new Animated.Value(-80)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const compassAnim = useRef(new Animated.Value(0)).current;
-  const pullHintArrowAnim = useRef(new Animated.Value(0)).current;
-  const pullHintShimmerAnim = useRef(new Animated.Value(0)).current;
   const navArrowAnim = useRef(new Animated.Value(0)).current;
   const navCardFadeAnim = useRef(new Animated.Value(1)).current;
   const navCardSlideAnim = useRef(new Animated.Value(0)).current;
@@ -434,21 +417,11 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
       ? animatingToSheetIndex > SHEET_INDEX.COLLAPSED
       : sheetIndex > SHEET_INDEX.COLLAPSED || isSheetRaisedPreview;
 
-  const pullHintArrowTranslateY = pullHintArrowAnim.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, -2, 0],
-  });
-
   // Inverted nav arrow for right-turn bounce (positive X instead of negative)
   const navArrowAnimRight = navArrowAnim.interpolate({
     inputRange: [-5, 0],
     outputRange: [5, 0],
   });
-  const pullHintTextOpacity = pullHintShimmerAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.6, 1, 0.6],
-  });
-
   useEffect(() => {
     if (isNavigating) return;
     if (sheetContent === 'search' && !selectedPin && !selectedPoi) {
@@ -505,14 +478,12 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
           ...shadows.lg,
         },
         groupFab: {
-          position: 'absolute',
-          left: spacing.md,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
           paddingHorizontal: spacing.sm + 2,
           paddingVertical: 9,
-          borderRadius: borderRadius.round,
+          borderRadius: borderRadius.sm,
           maxWidth: 180,
           ...shadows.md,
         },
@@ -714,22 +685,43 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
         // Quick action chips
         quickActions: {
           flexDirection: 'row',
+          flexWrap: 'wrap',
           paddingTop: spacing.sm,
           paddingHorizontal: spacing.md,
+          gap: spacing.sm,
+        },
+        quickActionsScroll: {
+          paddingTop: spacing.sm,
+          paddingLeft: spacing.md,
         },
         quickActionButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          width: '47.5%',
+          backgroundColor: colors.surfaceGray,
+          paddingHorizontal: spacing.md,
+          paddingVertical: 13,
+          borderRadius: borderRadius.md,
+          gap: spacing.sm,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        quickActionButtonScroll: {
           flexDirection: 'row',
           alignItems: 'center',
           backgroundColor: colors.surfaceGray,
           paddingHorizontal: spacing.md,
           paddingVertical: 10,
           borderRadius: borderRadius.md,
-          marginRight: spacing.sm,
           gap: spacing.xs,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
         },
         quickActionText: {
           ...typography.bodySmallMedium,
           color: colors.text,
+          fontWeight: '600',
+          fontSize: 14,
         },
 
         // Search results
@@ -804,6 +796,7 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
         // Nearby feed
         feedSection: {
           paddingHorizontal: spacing.md,
+          paddingTop: spacing.lg,
           paddingBottom: spacing.lg,
         },
         feedSectionGroup: {
@@ -877,20 +870,24 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
         feedItem: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 12,
-          gap: spacing.md,
-        },
-        feedItemBorder: {
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: colors.borderLight,
-        },
-        feedIconContainer: {
-          width: 40,
-          height: 40,
-          borderRadius: borderRadius.sm,
+          paddingVertical: 14,
+          paddingHorizontal: spacing.md,
+          gap: spacing.sm + 2,
           backgroundColor: colors.surfaceGray,
+          borderRadius: borderRadius.md,
+          marginBottom: spacing.sm,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        feedItemBorder: {},
+        feedIconContainer: {
+          width: 46,
+          height: 46,
+          borderRadius: borderRadius.sm,
+          backgroundColor: colors.surface,
           justifyContent: 'center',
           alignItems: 'center',
+          flexShrink: 0,
         },
         feedIconContainerEvent: {
           backgroundColor: 'rgba(255, 255, 255, 0.06)',
@@ -901,10 +898,10 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
         feedIconContainerPin: {
           backgroundColor: colors.surfaceGray,
         },
-        feedInfo: { flex: 1 },
-        feedTitle: { ...typography.bodySmallMedium, color: colors.text },
-        feedSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
-        feedMeta: { ...typography.caption, color: colors.textMuted, fontSize: 11, marginTop: 2 },
+        feedInfo: { flex: 1, gap: 1 },
+        feedTitle: { ...typography.bodySmallMedium, color: colors.text, fontWeight: '600', fontSize: 14 },
+        feedSubtitle: { ...typography.caption, color: colors.textSecondary, fontSize: 12 },
+        feedMeta: { ...typography.caption, color: colors.textMuted, fontSize: 11, marginTop: 1 },
         reportDistanceRow: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -917,8 +914,8 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
           fontSize: 11,
           fontWeight: '700',
         },
-        feedTimeRow: { alignItems: 'flex-end', gap: 4 },
-        feedTime: { ...typography.caption, color: colors.textMuted },
+        feedTimeRow: { alignItems: 'flex-end', gap: 4, alignSelf: 'flex-start', paddingTop: 2 },
+        feedTime: { ...typography.caption, color: colors.textMuted, fontSize: 11 },
         liveDot: {
           width: 7,
           height: 7,
@@ -988,7 +985,8 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
           alignItems: 'center',
           justifyContent: 'center',
           gap: spacing.xs,
-          paddingVertical: spacing.sm,
+          paddingTop: spacing.sm,
+          paddingBottom: spacing.xs,
         },
         longPressHintText: {
           ...typography.caption,
@@ -2289,12 +2287,12 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
           gap: 6,
           height: 42,
           borderRadius: borderRadius.md,
-          backgroundColor: colors.interactiveBg,
+          backgroundColor: colors.accent,
         },
         detailWriteReviewText: {
           fontSize: 14,
           fontWeight: '600' as const,
-          color: colors.interactiveText,
+          color: '#000000',
           lineHeight: 18,
         },
         detailInlineActionsRow: {
@@ -3161,43 +3159,6 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
   }, []);
 
 
-  // ── Pull-up hint animations ───────────────────────────────
-  useEffect(() => {
-    const arrowLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pullHintArrowAnim, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pullHintArrowAnim, {
-          toValue: 2,
-          duration: 900,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    const shimmerLoop = Animated.loop(
-      Animated.timing(pullHintShimmerAnim, {
-        toValue: 1,
-        duration: 2800,
-        easing: Easing.inOut(Easing.linear),
-        useNativeDriver: true,
-      }),
-      { resetBeforeIteration: true }
-    );
-
-    arrowLoop.start();
-    shimmerLoop.start();
-    return () => {
-      arrowLoop.stop();
-      shimmerLoop.stop();
-      pullHintArrowAnim.setValue(0);
-      pullHintShimmerAnim.setValue(0);
-    };
-  }, []);
 
   // ── Compass rotation animation ───────────────────────────
   useEffect(() => {
@@ -3770,48 +3731,58 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
   };
 
   const handleQuickAction = async (type: string) => {
-    const queryLabel = type === 'safe_walk' ? 'safe walk' : type === 'open_late' ? 'open late' : type;
-    setSearchQuery(queryLabel);
+    // Navigation-only actions
+    if (type === 'add_report') {
+      if (userLocation) navigation.navigate('CreateReport', { location: { lat: userLocation[1], lng: userLocation[0] } });
+      return;
+    }
+    if (type === 'saved') {
+      navigation.navigate('SavedItems');
+      return;
+    }
+    if (type === 'friends') {
+      navigation.navigate('Groups');
+      return;
+    }
+
     if (!userLocation) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSearching(true);
-    setCurrentSearchType(type);
     try {
-      if (type === 'safe_walk' || type === 'open_late') {
-        const response = await searchAPI.search(
-          queryLabel,
-          { lat: userLocation[1], lng: userLocation[0] },
-          getAdaptiveRadius('search', queryLabel)
-        );
-        if (response.success) {
-          const pinsList = response.data.results?.pins || [];
-          const eventsList = response.data.results?.events || [];
-          setPins(pinsList);
-          setEvents(eventsList);
-          setSearchResults([...pinsList, ...eventsList]);
-          setSheetContent('results');
-          safeSnapToIndex(SHEET_INDEX.HALF);
-        }
-      } else if (type === 'event') {
-        const response = await eventAPI.getUpcoming(userLocation[1], userLocation[0], getAdaptiveRadius('events'));
-        if (response.success) {
-          const results = response.data.events || [];
-          setEvents(results);
-          setSearchResults(results);
-          setSheetContent('results');
-          safeSnapToIndex(SHEET_INDEX.HALF);
-        }
-      } else {
+      if (type === 'active_reports') {
+        // Refresh and show recent reports on the map and in the sheet
+        await loadNearbyReports();
+        const recentReports = reports.filter((r: any) => {
+          const age = Date.now() - new Date(r.created_at).getTime();
+          return age < 24 * 60 * 60 * 1000;
+        });
+        setSearchResults(recentReports);
+        setSheetContent('results');
+        safeSnapToIndex(SHEET_INDEX.HALF);
+      } else if (type === 'food_open') {
         const response = await searchAPI.searchPins({
           lat: userLocation[1],
           lng: userLocation[0],
-          radius: getAdaptiveRadius('pins', queryLabel),
-          type,
+          radius: getAdaptiveRadius('pins', 'food'),
+          type: 'food',
         });
         if (response.success) {
           const results = response.data.pins || [];
           setPins(results);
           setSearchResults(results);
+          setSheetContent('results');
+          safeSnapToIndex(SHEET_INDEX.HALF);
+        }
+      } else if (type === 'events_today') {
+        const response = await eventAPI.getUpcoming(userLocation[1], userLocation[0], getAdaptiveRadius('events'));
+        if (response.success) {
+          const now = new Date();
+          const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+          const todayEvents = (response.data.events || []).filter((e: any) => {
+            const start = e.start_time ? new Date(e.start_time) : null;
+            return start && start <= todayEnd;
+          });
+          setEvents(todayEvents);
+          setSearchResults(todayEvents);
           setSheetContent('results');
           safeSnapToIndex(SHEET_INDEX.HALF);
         }
@@ -5115,53 +5086,55 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
         <Text style={[styles.areaStatusText, { flexShrink: 0 }]} numberOfLines={1}>{areaStatus.activityText}</Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.quickActions}
-        contentContainerStyle={{ paddingRight: spacing.md }}
-      >
-        <TouchableOpacity
-          style={styles.quickActionButton}
-          onPress={() => {
-            if (userLocation) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              navigation.navigate('CreateReport', {
-                location: { lat: userLocation[1], lng: userLocation[0] },
-              });
-            }
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="flag-outline" size={18} color={colors.text} />
-          <Text style={styles.quickActionText}>Report</Text>
-        </TouchableOpacity>
-        {getChipPreset().map((action) => (
-          <TouchableOpacity
-            key={action.id}
-            style={styles.quickActionButton}
-            onPress={() => handleQuickAction(action.id)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name={action.icon as any} size={18} color={colors.text} />
-            <Text style={styles.quickActionText}>{action.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {!isSheetExpandedForContent && !isSearchFocused ? (
-        <View style={styles.pullUpHint}>
-          <View style={styles.pullUpHintContent}>
-            <Animated.View style={[styles.pullUpArrows, { transform: [{ translateY: pullHintArrowTranslateY }] }]}>
-              <Ionicons name="chevron-up-outline" size={12} color={colors.textMuted} />
-              <Ionicons name="chevron-up-outline" size={12} color={colors.textMuted} style={styles.pullUpArrowStacked} />
-            </Animated.View>
-            <Animated.Text style={[styles.pullUpHintText, { opacity: pullHintTextOpacity }]}>
-              Pull up to see nearby activity
-            </Animated.Text>
-          </View>
+      {isSheetExpandedForContent ? (
+        <View style={styles.quickActions}>
+          {QUICK_ACTIONS.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={styles.quickActionButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                handleQuickAction(action.id);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={action.icon as any} size={18} color={colors.text} />
+              <Text style={styles.quickActionText}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      ) : null}
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.quickActionsScroll}
+          contentContainerStyle={{ paddingRight: spacing.md, gap: spacing.sm }}
+        >
+          {QUICK_ACTIONS.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={styles.quickActionButtonScroll}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                handleQuickAction(action.id);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={action.icon as any} size={18} color={colors.text} />
+              <Text style={styles.quickActionText}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
+      {!isSearchFocused && !isSheetExpandedForContent && (
+        <Reanimated.View style={[styles.pullUpHint, pullHintAnimatedStyle]}>
+          <View style={styles.pullUpHintContent}>
+            <Ionicons name="chevron-up-outline" size={12} color={colors.textMuted} />
+            <Text style={styles.pullUpHintText}>Pull up to see nearby activity</Text>
+          </View>
+        </Reanimated.View>
+      )}
 
       {/* Trending / Hot right now — empty state — only show if there's real content (pins exist) but nothing is trending */}
       {!isSearchFocused && isSheetExpandedForContent && trendingItems.length === 0 && pins.length >= 3 && (
@@ -5257,12 +5230,10 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
       {/* Feed area */}
       {isSheetExpandedForContent && (
       <View style={styles.feedSection}>
-        <View style={styles.feedDivider} />
-
         {/* Count header + filter chips */}
         <View style={styles.feedTopRow}>
           <Text style={styles.feedHeading}>
-            {loadingNearby ? 'Loading...' : `${nearbyFeedItems.length} things nearby`}
+            {loadingNearby ? 'Loading...' : `${nearbyFeedItems.length} ${nearbyFeedItems.length === 1 ? 'thing' : 'things'} nearby`}
           </Text>
           {nearbyFeedItems.length > 0 && (
             <Text style={styles.feedCount}>
@@ -5381,7 +5352,7 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
                 }}
               >
                 <View style={[styles.feedIconContainer, { backgroundColor: iconBg }]}>
-                  <Ionicons name={item.icon as any} size={20} color={iconColor} />
+                  <Ionicons name={item.icon as any} size={22} color={iconColor} />
                 </View>
                 <View style={styles.feedInfo}>
                   <Text style={styles.feedTitle} numberOfLines={1}>{item.title}</Text>
@@ -5448,34 +5419,22 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
           if (liveItems.length > 0) sections.push({ label: 'Live now', icon: 'radio-outline', iconColor: '#EF4444', items: liveItems });
           if (reportItems.length > 0) sections.push({ label: 'Community reports', icon: 'flag-outline', iconColor: colors.warning, items: reportItems });
           if (nonLiveEvents.length > 0) sections.push({ label: 'Upcoming events', icon: 'calendar-outline', iconColor: colors.accent, items: nonLiveEvents });
-          // Separate recommended top-5 from the rest
-          const forYouIds = new Set(forYouPins.map((p: any) => p.id));
-          const forYouFeedItems = pinItems.filter(i => forYouIds.has(i.raw?.id));
-          const remainingPinItems = pinItems.filter(i => !forYouIds.has(i.raw?.id));
-
-          if (forYouFeedItems.length > 0) {
-            sections.push({
-              label: 'For you',
-              icon: 'sparkles-outline' as any,
-              iconColor: colors.accent,
-              items: forYouFeedItems,
-              showAddCta: false,
-            });
-          }
           sections.push({
-            label: forYouFeedItems.length > 0 ? 'More nearby' : 'Nearby spots',
+            label: 'Nearby spots',
             icon: 'location-outline',
             iconColor: colors.text,
-            items: remainingPinItems,
+            items: pinItems,
             showAddCta: pinItems.length === 0,
           });
 
           return sections.map((section) => (
             <View key={section.label} style={styles.feedSectionGroup}>
-              <View style={styles.feedSectionHeader}>
-                <Ionicons name={section.icon as any} size={12} color={section.iconColor} />
-                <Text style={[styles.feedSectionLabel, { color: section.iconColor }]}>{section.label}</Text>
-              </View>
+              {section.label !== 'Nearby spots' && (
+                <View style={styles.feedSectionHeader}>
+                  <Ionicons name={section.icon as any} size={12} color={section.iconColor} />
+                  <Text style={[styles.feedSectionLabel, { color: section.iconColor }]}>{section.label}</Text>
+                </View>
+              )}
               {section.items.map((item, index, arr) => renderFeedRow(item, index, arr))}
               {section.showAddCta && (
                 <TouchableOpacity
@@ -5574,7 +5533,7 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
       <View style={styles.resultsHeader}>
         <View>
           <Text style={styles.resultsTitle}>
-            {getChipPreset().find((c) => c.id === currentSearchType)?.label ||
+            {QUICK_ACTIONS.find((c) => c.id === currentSearchType)?.label ||
               currentSearchType.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) ||
               'Results'} nearby
           </Text>
@@ -6613,7 +6572,7 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
           ]}
         >
           <TouchableOpacity style={styles.detailWriteReviewBtn} onPress={handleWriteReview} activeOpacity={0.82}>
-            <Ionicons name="create-outline" size={15} color={colors.interactiveText} />
+            <Ionicons name="create-outline" size={15} color="#000000" />
             <Text style={styles.detailWriteReviewText}>
               {reviewCount > 0 ? 'Write a review' : 'Be the first to review'}
             </Text>
@@ -7003,12 +6962,6 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
         </View>
       )}
 
-      {loadingNearby && pins.length === 0 && events.length === 0 && (
-        <View pointerEvents="none" style={[styles.mapLoadingOverlay, { bottom: sheetPeek + spacing.sm }]}>
-          <ActivityIndicator size="small" color={colors.accent} />
-          <Text style={styles.mapLoadingText}>Finding nearby places…</Text>
-        </View>
-      )}
 
       {!isNavigating && weather && sheetContent === 'search' && !selectedPin && !selectedPoi && (
         <View pointerEvents="none" style={[styles.floatingWeather, { bottom: sheetPeek + spacing.sm }]}>
@@ -7027,8 +6980,10 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
         handleStyle={styles.sheetHandle}
         handleIndicatorStyle={styles.sheetHandleIndicator}
         style={{ ...shadows.sheet }}
+        animatedIndex={sheetAnimatedIndex}
         onAnimate={handleSheetAnimate}
         onChange={handleSheetChange}
+        onTouchStart={() => setIsSheetRaisedPreview(true)}
         topInset={insets.top + 60}
         animationConfigs={sheetAnimationConfigs}
       >
@@ -7291,36 +7246,40 @@ export default function MapScreen({ navigation, route, navBarHeight = 0 }: MapSc
         </Pressable>
       </Modal>
 
-      {/* Group context FAB — rendered last so it sits above all other overlays */}
-      {!isNavigating && !selectedPin && !selectedPoi && !isSheetExpandedForContent && sheetContent === 'search' && (
-        <TouchableOpacity
-          style={[
-            styles.groupFab,
-            {
-              bottom: sheetPeek + spacing.sm,
-              backgroundColor: activeGroup
-                ? colors.accent
-                : (isDarkMode ? 'rgba(30,30,30,0.90)' : 'rgba(255,255,255,0.94)'),
-              borderWidth: activeGroup ? 0 : StyleSheet.hairlineWidth,
-              borderColor: colors.border,
-              zIndex: 200,
-            },
-          ]}
-          onPress={() => setShowGroupPicker(true)}
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name={activeGroup ? 'people' : 'globe-outline'}
-            size={15}
-            color={activeGroup ? '#fff' : colors.textMuted}
-          />
-          <Text
-            style={[styles.groupFabLabel, { color: activeGroup ? '#fff' : colors.textMuted }]}
-            numberOfLines={1}
+      {/* Group context FAB — opacity driven by sheet animated index so it hides on the UI thread */}
+      {!isNavigating && !selectedPin && !selectedPoi && !isSearchFocused && sheetContent === 'search' && !showGroupPicker && (
+        <Reanimated.View style={[groupFabAnimatedStyle, { position: 'absolute', left: spacing.md, bottom: sheetPeek + spacing.sm, zIndex: 1 }]}>
+          <TouchableOpacity
+            style={[
+              styles.groupFab,
+              {
+                position: 'relative',
+                left: 0,
+                bottom: 0,
+                backgroundColor: activeGroup
+                  ? colors.accent
+                  : (isDarkMode ? 'rgba(30,30,30,0.90)' : 'rgba(255,255,255,0.94)'),
+                borderWidth: activeGroup ? 0 : StyleSheet.hairlineWidth,
+                borderColor: colors.border,
+                zIndex: 1,
+              },
+            ]}
+            onPress={() => setShowGroupPicker(true)}
+            activeOpacity={0.8}
           >
-            {activeGroup ? activeGroup.name : 'Public'}
-          </Text>
-        </TouchableOpacity>
+            <Ionicons
+              name={activeGroup ? 'people' : 'globe-outline'}
+              size={15}
+              color={activeGroup ? '#fff' : colors.textMuted}
+            />
+            <Text
+              style={[styles.groupFabLabel, { color: activeGroup ? '#fff' : colors.textMuted }]}
+              numberOfLines={1}
+            >
+              {activeGroup ? activeGroup.name : 'Public'}
+            </Text>
+          </TouchableOpacity>
+        </Reanimated.View>
       )}
 
       <GroupPickerModal

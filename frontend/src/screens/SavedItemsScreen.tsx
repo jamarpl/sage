@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { CardSkeleton } from '../components/Skeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, typography, borderRadius } from '../constants/theme';
@@ -320,8 +321,10 @@ export default function SavedItemsScreen({ navigation }: SavedItemsScreenProps) 
       </View>
 
       {loading ? (
-        <View style={s.centered}>
-          <ActivityIndicator size="large" color={colors.text} />
+        <View>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <CardSkeleton key={i} lines={2} style={{ marginHorizontal: spacing.md, marginTop: i === 0 ? spacing.md : 0 }} />
+          ))}
         </View>
       ) : (
         <FlatList

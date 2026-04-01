@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { ProfileSkeleton } from '../components/Skeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, typography, borderRadius } from '../constants/theme';
@@ -243,7 +244,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       ...typography.captionMedium,
       color: colors.textMuted,
     },
-    leaderboardRankTop: { color: colors.warning, fontWeight: '700' },
+    leaderboardRankIcon: { width: 24, textAlign: 'center' },
     leaderboardAvatar: {
       width: 28,
       height: 28,
@@ -396,11 +397,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   };
 
   if (!user) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface }}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
+    return <ProfileSkeleton />;
   }
 
   return (
@@ -573,11 +570,14 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <Text style={s.leaderboardTitle}>Top contributors</Text>
             {leaderboard.slice(0, 5).map((leader: any, idx: number) => {
               const isYou = leader.id === user?.id;
-              const rankEmoji = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
+              const rankIcon =
+                idx === 0 ? { name: 'trophy', color: '#FFD700' } :
+                idx === 1 ? { name: 'medal', color: '#C0C0C0' } :
+                idx === 2 ? { name: 'medal', color: '#CD7F32' } : null;
               return (
                 <View key={leader.id} style={[s.leaderboardRow, idx === leaderboard.slice(0, 5).length - 1 && { borderBottomWidth: 0 }]}>
-                  {rankEmoji
-                    ? <Text style={[s.leaderboardRank, s.leaderboardRankTop]}>{rankEmoji}</Text>
+                  {rankIcon
+                    ? <Ionicons name={rankIcon.name as any} size={18} color={rankIcon.color} style={s.leaderboardRankIcon} />
                     : <Text style={s.leaderboardRank}>{leader.rank}</Text>
                   }
                   <View style={s.leaderboardAvatar}>

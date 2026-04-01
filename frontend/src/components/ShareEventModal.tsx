@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { SkeletonBox } from './Skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, typography, borderRadius, shadows } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -194,8 +195,10 @@ export default function ShareEventModal({ visible, onClose, event }: ShareEventM
 
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Generating share link...</Text>
+              <SkeletonBox width="90%" height={60} radius={12} />
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+                {[0, 1, 2].map((i) => <SkeletonBox key={i} width={64} height={64} radius={12} />)}
+              </View>
             </View>
           ) : (
             <>

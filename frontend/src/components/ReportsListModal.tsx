@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import { CardSkeleton } from './Skeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, typography, borderRadius, shadows } from '../constants/theme';
@@ -248,8 +249,10 @@ export default function ReportsListModal({
           )}
 
           {loading ? (
-            <View style={{ padding: spacing.xxl, alignItems: 'center' }}>
-              <ActivityIndicator size="large" color={colors.primary} />
+            <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
+              {[0, 1, 2].map((i) => (
+                <CardSkeleton key={i} lines={2} />
+              ))}
             </View>
           ) : !hasData ? (
             <View style={{ paddingHorizontal: spacing.md }}>

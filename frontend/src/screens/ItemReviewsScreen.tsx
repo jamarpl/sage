@@ -11,6 +11,7 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
+import { AvatarRowSkeleton } from '../components/Skeleton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, typography, borderRadius } from '../constants/theme';
@@ -559,8 +560,10 @@ export default function ItemReviewsScreen({ navigation, route }: ItemReviewsScre
             </View>
             <View style={s.divider} />
             {loading && (
-              <View style={s.centered}>
-                <ActivityIndicator size="large" color={colors.text} />
+              <View style={{ paddingHorizontal: spacing.md }}>
+                {[0, 1, 2, 3].map((i) => (
+                  <AvatarRowSkeleton key={i} avatarSize={40} lines={3} />
+                ))}
               </View>
             )}
           </>

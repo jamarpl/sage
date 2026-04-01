@@ -10,6 +10,7 @@ import {
   ScrollView,
   Animated,
 } from 'react-native';
+import { ChatSkeleton } from './Skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, typography, borderRadius } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -278,9 +279,7 @@ export default function ReportChat({ reportId, currentUserId }: ReportChatProps)
   return (
     <View style={styles.container}>
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={colors.textMuted} />
-        </View>
+        <ChatSkeleton />
       ) : (
         <ScrollView style={styles.scrollArea} contentContainerStyle={styles.messagesArea}>
           {recentMessages.length === 0 ? (

@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
+import { FeedPostSkeleton } from './Skeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, typography, borderRadius } from '../constants/theme';
 import { API_ORIGIN } from '../constants/api';
@@ -293,8 +294,8 @@ export default function EventFeed({ eventId, currentUserId }: EventFeedProps) {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.accent} />
+      <View style={styles.container}>
+        {[0, 1, 2].map((i) => <FeedPostSkeleton key={i} />)}
       </View>
     );
   }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, ActivityIndicator, Animated, TouchableOpacity } from 'react-native';
+import { SkeletonBox } from '../components/Skeleton';
 import { createStackNavigator, CardStyleInterpolators, TransitionSpecs } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -126,8 +127,11 @@ const AppNavigator = () => {
 
   if (loading || hasOnboarded === null) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.accent} />
+      <View style={{ flex: 1, backgroundColor: colors.background, padding: 24, paddingTop: 80, gap: 16 }}>
+        <SkeletonBox width="50%" height={28} radius={8} />
+        <SkeletonBox width="100%" height={56} radius={12} />
+        <SkeletonBox width="100%" height={56} radius={12} />
+        <SkeletonBox width="70%" height={14} radius={6} style={{ alignSelf: 'center', marginTop: 8 }} />
       </View>
     );
   }

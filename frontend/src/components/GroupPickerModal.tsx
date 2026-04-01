@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  ActivityIndicator,
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,7 +30,6 @@ export default function GroupPickerModal({ visible, onClose, onManage }: GroupPi
   useEffect(() => {
     if (visible) {
       setModalVisible(true);
-      loadGroups();
       slideAnim.setValue(400);
       fadeAnim.setValue(0);
       Animated.parallel([
@@ -181,6 +179,25 @@ export default function GroupPickerModal({ visible, onClose, onManage }: GroupPi
           fontWeight: '600' as const,
         },
         loading: { padding: spacing.lg, alignItems: 'center' },
+        skeletonRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: spacing.md,
+          height: 59,
+          gap: spacing.sm,
+        },
+        skeletonIcon: {
+          width: 34,
+          height: 34,
+          borderRadius: 10,
+          backgroundColor: colors.border,
+        },
+        skeletonBody: { flex: 1, gap: 5 },
+        skeletonLine: {
+          height: 12,
+          borderRadius: 6,
+          backgroundColor: colors.border,
+        },
       }),
     [colors, insets.bottom]
   );
@@ -253,9 +270,18 @@ export default function GroupPickerModal({ visible, onClose, onManage }: GroupPi
 
             {/* Groups */}
             {loadingGroups && groups.length === 0 ? (
-              <View style={s.loading}>
-                <ActivityIndicator color={colors.accent} />
-              </View>
+              [0, 1].map((i) => (
+                <View key={i}>
+                  <View style={s.divider} />
+                  <View style={s.skeletonRow}>
+                    <View style={s.skeletonIcon} />
+                    <View style={s.skeletonBody}>
+                      <View style={[s.skeletonLine, { width: '45%' }]} />
+                      <View style={[s.skeletonLine, { width: '28%', opacity: 0.5 }]} />
+                    </View>
+                  </View>
+                </View>
+              ))
             ) : groups.length === 0 ? (
               <View style={s.emptyWrap}>
                 <View style={s.divider} />
